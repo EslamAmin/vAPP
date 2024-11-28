@@ -1,0 +1,74 @@
+# Required providers
+terraform {
+  required_providers {
+    vcd = {
+      source  = "vmware/vcd"
+      version = "3.7.0" # Use the latest stable version
+    }
+  }
+}
+
+# Provider configuration
+provider "vcd" {
+  user             = var.vcd_username        # VCD username
+  password         = var.vcd_password        # VCD password
+  org              = var.vcd_org             # Organization name
+  url              = var.vcd_url             # VCD endpoint URL
+  allow_unverified_ssl = true                # Set to false for secure environments
+}
+
+# Variables
+variable "vcd_username" {}
+variable "vcd_password" {}
+variable "vcd_org" {}
+variable "vcd_url" {}
+variable "vcd_vdc" {}
+variable "vcd_catalog" {}
+variable "vcd_vapp_template" {}
+variable "vcd_vapp_name" {}
+variable "vcd_vm_name" {}
+variable "vcd_network_name" {}
+variable "vcd_storage_profile" {}
+
+# Deploy a vApp
+resource "vcd_vapp" "example_vapp" {
+  org           = var.vcd_org
+  vdc           = var.vcd_vdc
+  name          = var.vcd_vapp_name
+  description   = "Terraform managed vApp"
+  power_on      = false # Set to true if you want to power on after deployment
+  depends_on    = [vcd_vapp_vm.example_vm]
+}
+
+# Add a VM to the vApp
+resource "vcd_vapp_vm" "example_vm" {
+  vapp_name           = vcd_vapp.example_vapp.name
+  org                 = var.vcd_org
+  vdc                 = var.vcd_vdc
+  name                = var.vcd_vm_name
+  catalog_name        = var.vcd_catalog
+  template_name       = var.vcd_vapp_template
+  computer_name       = var.vcd_vm_name
+  network {
+    name         = var.vcd_network_name
+    ip_allocation_mode = "DHCP" # Options: DHCP, POOL, MANUAL
+  }
+  memory              = 2048 # Memory in MB
+  cpus                = 2
+  disk {
+    size_in_mb      = 10240 # Disk size in MB
+    bus_type        = "SCSI"
+    bus_number      = 0
+    unit_number     = 0
+  }
+  storage_profile     = var.vcd_storage_profile
+}
+
+# Output vApp details
+output "vapp_name" {
+  value = vcd_vapp.example_vapp.name
+}
+
+output "vm_name" {
+  value = vcd_vapp_vm.example_vm.name
+}
